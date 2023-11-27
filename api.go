@@ -30,8 +30,8 @@ func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", makeHttpHandleFunc(s.handleAccount))
-
-	router.HandleFunc("/account/{id}", makeHttpHandleFunc(s.handleGetAccountByID))
+	router.HandleFunc("/account/{id}", withJWTAuth(makeHttpHandleFunc(s.handleGetAccountByID)))
+	router.HandleFunc("/transfer", makeHttpHandleFunc(s.handleTransfer))
 
 	log.Println("JSON API server  running on port", s.listenAddr)
 
@@ -109,7 +109,12 @@ func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	trsReq := new(TransferRequest)
+	if err := json.NewDecoder(r.Body).Decode(trsReq); err != nil {
+		return err
+	}
+	defer r.Body.Close()
+	return WriteJSON(w, http.StatusOK, trsReq)
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -135,4 +140,15 @@ func getID(r *http.Request) (int, error) {
 		return id, fmt.Errorf("invalid id given %s", idStr)
 	}
 	return id, nil
+}
+
+func withJWTAuth(handleFunc http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("calling JWT auth middleware")
+		handleFunc(w, r)
+	}
+}
+
+func valid() {
+
 }
