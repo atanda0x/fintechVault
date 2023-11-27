@@ -20,7 +20,7 @@ type Postgresdb struct {
 }
 
 func NewPostgresdb() (*Postgresdb, error) {
-	conn := "user=root dbname=fintech password=ethereumsolana sslmode=disable"
+	conn := "user=root dbname=fintechdb password=ethereumsolana sslmode=disable"
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
 		return nil, err
@@ -84,10 +84,19 @@ func (d *Postgresdb) UpdateAccount(*Account) error {
 }
 
 func (d *Postgresdb) DeleteAccount(id int) error {
-	return nil
+	_, err := d.db.Query("select from account where id = $1", id)
+	return err
 }
 
 func (d *Postgresdb) GetAccountByID(id int) (*Account, error) {
+	rows, err := d.db.Query("select * from account where id = $1", id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanIntoAccount(rows)
+	}
 	return nil, nil
 }
 
@@ -99,16 +108,7 @@ func (d *Postgresdb) GetAccounts() ([]*Account, error) {
 
 	accounts := []*Account{}
 	for rows.Next() {
-		account := new(Account)
-		err := rows.Scan(
-			&account.ID,
-			&account.FirstName,
-			&account.LastName,
-			&account.OtherName,
-			&account.Number,
-			&account.Balance,
-			&account.CreatedAt)
-
+		account, err := scanIntoAccount(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -118,4 +118,18 @@ func (d *Postgresdb) GetAccounts() ([]*Account, error) {
 
 	return accounts, nil
 
+}
+
+func scanIntoAccount(rows *sql.Rows) (*Account, error) {
+	account := new(Account)
+	err := rows.Scan(
+		&account.ID,
+		&account.FirstName,
+		&account.LastName,
+		&account.OtherName,
+		&account.Number,
+		&account.Balance,
+		&account.CreatedAt)
+
+	return account, err
 }
