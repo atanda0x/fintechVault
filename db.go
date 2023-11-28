@@ -35,16 +35,17 @@ func NewPostgresdb() (*Postgresdb, error) {
 }
 
 func (d *Postgresdb) Init() error {
-	return nil
+	return d.CreateAccountTable()
 }
 
 func (d *Postgresdb) CreateAccountTable() error {
-	query := `create table account if not exists account (
+	query := `create table if not exists account (
 		id serial primary key,
-		first_name varchar(50),
-		last_name varchar(50),
-		other_name varchar(50),
+		first_name varchar(100),
+		last_name varchar(100),
+		other_name varchar(100),
 		number serial,
+		encrypted_password varchar(100),
 		balance serial, 
 		created_at timestamp
 	)`
@@ -53,22 +54,16 @@ func (d *Postgresdb) CreateAccountTable() error {
 }
 
 func (d *Postgresdb) CreateAccount(acc *Account) error {
-	query := `insert into account (
-		first_name, 
-		last_name, 
-		other_name, 
-		number, 
-		balance, 
-		created_at
-	)
-	values ($1, $2, $3, $4, $5, $6)
+	query := `insert into account (first_name, last_name, other_name, number, encrypted_password, balance, created_at)
+	values ($1, $2, $3, $4, $5, $6, $7)
 	`
-	res, err := d.db.Query(
+	_, err := d.db.Query(
 		query,
 		acc.FirstName,
 		acc.LastName,
 		acc.OtherName,
 		acc.Number,
+		acc.EncryptedPassword,
 		acc.Balance,
 		acc.CreatedAt)
 
@@ -76,7 +71,6 @@ func (d *Postgresdb) CreateAccount(acc *Account) error {
 		return err
 	}
 
-	fmt.Printf("%+v\n", res)
 	return nil
 }
 
@@ -142,6 +136,7 @@ func scanIntoAccount(rows *sql.Rows) (*Account, error) {
 		&account.LastName,
 		&account.OtherName,
 		&account.Number,
+		&account.EncryptedPassword,
 		&account.Balance,
 		&account.CreatedAt)
 

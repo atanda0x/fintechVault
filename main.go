@@ -16,6 +16,8 @@ func seedAccount(store Storage, fname, lname, oname, pw string) *Account {
 		log.Fatal(err)
 	}
 
+	fmt.Println("new Account =>", acc.Number)
+
 	return acc
 }
 
