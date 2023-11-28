@@ -12,6 +12,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type LoginRequest struct {
+	Number   int    `json:"number"`
+	Password string `json:"password"`
+}
+
 type APIServer struct {
 	listenAddr string
 	store      Storage
@@ -31,6 +36,7 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
+	router.HandleFunc("/login", makeHttpHandleFunc(s.handleLogin))
 	router.HandleFunc("/account", makeHttpHandleFunc(s.handleAccount))
 	router.HandleFunc("/account/{id}", withJWTAuth(makeHttpHandleFunc(s.handleGetAccountByID), s.store))
 	router.HandleFunc("/transfer", makeHttpHandleFunc(s.handleTransfer))
@@ -38,6 +44,18 @@ func (s *APIServer) Run() {
 	log.Println("JSON API server  running on port", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, router)
+}
+
+func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
+	if r.Method == "POST" {
+		return fmt.Errorf("method not allowed %s", r.Method)
+	}
+
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+	return WriteJSON(w, http.StatusOK, req)
 }
 
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
@@ -91,7 +109,10 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	account := NewAccount(accReq.FirstName, accReq.LastName, accReq.OtherName)
+	account, err := NewAccount(accReq.FirstName, accReq.LastName, accReq.OtherName, accReq.Password)
+	if err != nil {
+		return err
+	}
 	if err := s.store.CreateAccount(account); err != nil {
 		return err
 	}
