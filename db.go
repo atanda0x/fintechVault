@@ -41,11 +41,11 @@ func (d *Postgresdb) Init() error {
 func (d *Postgresdb) CreateAccountTable() error {
 	query := `create table if not exists account (
 		id serial primary key,
-		first_name varchar(100),
-		last_name varchar(100),
-		other_name varchar(100),
+		first_name varchar(200),
+		last_name varchar(200),
+		other_name varchar(200),
 		number serial,
-		encrypted_password varchar(100),
+		encrypted_password varchar(200),
 		balance serial, 
 		created_at timestamp
 	)`
@@ -105,7 +105,7 @@ func (d *Postgresdb) GetAccountByID(id int) (*Account, error) {
 	for rows.Next() {
 		return scanIntoAccount(rows)
 	}
-	return nil, nil
+	return nil, fmt.Errorf("account %d not found", id)
 }
 
 func (d *Postgresdb) GetAccounts() ([]*Account, error) {

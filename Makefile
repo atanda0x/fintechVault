@@ -12,3 +12,6 @@ docker:
 
 createdb:
 	docker exec -it fintech createdb --username=root --owner=root fintechdb
+
+dropdb:
+	docker exec -it fintech dropdb -U root fintechdb
