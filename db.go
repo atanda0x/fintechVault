@@ -13,6 +13,7 @@ type Storage interface {
 	UpdateAccount(*Account) error
 	GetAccounts() ([]*Account, error)
 	GetAccountByID(int) (*Account, error)
+	GetAccountByNumber(int) (*Account, error)
 }
 
 type Postgresdb struct {
@@ -86,6 +87,19 @@ func (d *Postgresdb) UpdateAccount(*Account) error {
 func (d *Postgresdb) DeleteAccount(id int) error {
 	_, err := d.db.Query("select from account where id = $1", id)
 	return err
+}
+
+func (d *Postgresdb) GetAccountByNumber(number int) (*Account, error) {
+	rows, err := d.db.Query("select * from account where number = $1", number)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanIntoAccount(rows)
+	}
+
+	return nil, fmt.Errorf("account with number [%d] not found", number)
 }
 
 func (d *Postgresdb) GetAccountByID(id int) (*Account, error) {
